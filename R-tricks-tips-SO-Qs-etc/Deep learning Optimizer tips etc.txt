@@ -1,0 +1,5 @@
+The landscape of the error function of neural networks with many hidden units is a high dimensional space and apparently the local minima are not a problem in practice. The ability of the algorithms to evade low curvature areas (plateaux) near saddle points seems to be way more important.
+http://papers.nips.cc/paper/5486-identifying-and-attacking-the-saddle-point-problem-in-high-dimensional-non-convex-optimization
+In that respect the above visualizations might give some intuitions on why Nesterov momentum, AdaDelta and RMSprop are so popular among deep learning practitioners.
+
+
