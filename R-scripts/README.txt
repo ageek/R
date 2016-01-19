@@ -1,0 +1,3 @@
+This folder contains my experimental R scripts  - for various things ...
+
+----Edit as needed----
