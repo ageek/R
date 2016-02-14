@@ -1,0 +1,68 @@
+https://www.kaggle.com/c/homesite-quote-conversion/forums/t/18837/what-is-your-best-single-model-score-and-how-did-you-achieve-it
+
+My best single model score was: Public = 0.96902, Private = 0.96828
+
+Ensembling some XGB variations of model parameters, seeds, different feature engineering raised that to: Public = 0.96910, Private = 0.96855, ranking 17th and 21st respectively.
+
+Here is a list of all feature engineering that improved the score during the competition. The number of features in the end was ~1200.
+
+Remove ~10 features with zero variance and near zero variance.
+Remove ~5 featues containing more than 97% -1s.
+Replace NAs in 2 columns with a new constant value (100).
+Center, Scale, and Box-Cox transformation on numericals.
+Extract date features (day, month, day of week, year, quarter, week of year, day since epoch, etc).
+One-hot encoding (aka dummy variables) for categoricals and date features.
+Count -1s, NAs, ""s in each row and add the counts as new features.
+Use xgb.importance and correlation to target to select most important features for the coming step.
+Add features: log(x), sqrt(x), 1/x (where x is in the top N important features).
+Add features: x+y, x-y, x*y, x/y (where x and y are in the top N important features, or x and y are highly correlated with each other).
+Repeat 9 and 10 to perform up to 4 operations (e.g: x+((1/w)*(y-z))).
+In retrospect, if I would do things differently or if I had more time, I would:
+
+Not remove some of the features I removed early on and instead do feature selection in the end. Although some are saying on the forums that feature selection did not help much.
+Give more time for model parameter grid search. The set of parameters on that popular public script were doing well, so I was lazy to do grid search until the last week.
+Follow a better stratified CV scheme to avoid private LB drop, I was only using a 3-fold xgb.cv
+Train, tune and stack different types of models (NN, LR, etc).
+
+=========================================================================================
+
+In our group, 'A Few with No Clue' with final pos. 8th, there were some subgroups (Datacousins in my case). Datacousins managed to get PubL 0.96885 with a heavily brute-force approach. We had some clean-up pending but stopped trying to improve our model because Tian was on fire building models scoring PubL 0.9693
+
+This was Datacousins' approach for our Xgboost CV12 scoring 0.96885:
+
+ num_rounds         20000
+ early_stopping       500
+ eta                    0.0028
+ max_depth              6
+ subsample              0.83
+ colsample_bytree       0.77
+COLS_DIFF ('CoverageField1B', 'PropertyField21B'), ('GeographicField6A', 'GeographicField8A'), ('GeographicField6A', 'GeographicField13A'), ('GeographicField8A', 'GeographicField11A'), ('GeographicField8A', 'GeographicField13A'), ('GeographicField11A', 'GeographicField13A')])
+
+COLS_JOIN All combinations of 2 of Top7 features (by feat.imp) 
+(we take top 7 features according to xgb feature importance. We get all possible pairs and create a new feature for each pair that is the sum of those 2 columns)
+
+COLS_MULTIPLY All combinations of 3 of Top4 features (by feat.imp) 
+(we take top 4 features according to xgb feature importance. We get all possible groups of three and create a new feature for each Trio that is the multiplication of those 3 columns)
+
+DROP_THESE_COLUMNS ['PersonalField8', 'PersonalField37', 'PersonalField40', 'PersonalField49', 'PersonalField50', 'PersonalField51', 'PersonalField52', 'PersonalField53', 'PersonalField54', 'PersonalField56', 'PersonalField60', 'PersonalField64', 'PersonalField67', 'PersonalField68', 'PersonalField69', 'PersonalField70', 'PropertyField5', 'PropertyField6', 'PropertyField9', 'PropertyField10', 'PropertyField20', 'GeographicField10A', 'GeographicField10B', 'GeographicField22A']
+
+EXTRACT_FROM_DATE ['year', 'month', 'dayofweek', 'yearmonth']
+
+COUNT_BY_ROWS [None, nan, -1] 
+(this was mentioned in the forums and proved to add value. All those elements are counted and added into one new feature)
+
+DROP_CONSTANTS = 0 (dropping constants worsened the result) 
+DROP_FEATURES_ALL_NA = 0
+
+STANDARDIZATION_OF_X = YES (just the floats)
+
+NA_BINARIZE = YES 
+(new feature with 1s or 0s depending whether the original feature has a NA or other value)
+
+MONOTONIC_Transformation = YES (Top10 int/str features by feat.imp) 
+(for each feature value we create a new feature that assigns to each value the total count of that value. I.E. if Berlin is 23 times, we assign 23, if Madrid is 12 times we assign 12)
+
+ONE_HOT_ENCODE = YES Top 5 features (int/str)
+
+CLASS_MEAN Top10 features (int/str) 
+[for each selected column (top10) we create a new feature whose values are the mean of the class (quote conversion flag) of that respective value]
